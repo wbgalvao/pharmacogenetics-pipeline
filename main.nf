@@ -4,6 +4,7 @@
 sampleReadsFilesChannel = Channel.fromFilePairs("${params.samples}/*_R{1,2}*.fastq.gz")
 referenceGenomeDirectoryChannel = Channel.value(params.reference)
 resourceBundleDirectoryChannel = Channel.value(params.resources)
+intervalsFilePathChannel = Channel.value(params.list)
 resultsDirectory = params.results
 
 batchName = file(params.samples).getBaseName()
@@ -14,11 +15,6 @@ DBSNP_VCF = "dbsnp_138.b37.vcf"
 GOLD_STANDART_INDELS_1000G_VCF = "Mills_and_1000G_gold_standard.indels.b37.vcf"
 OMNI25_1000G_VCF = "1000G_omni2.5.b37.vcf"
 PHASE1_INDELS_1000G_VCF = "1000G_phase1.indels.b37.vcf"
-
-CYP2D6_START = 42512500
-CYP2D6_END = 42551883
-EGFR_START = 55086713
-EGFR_END = 55275773
 
 
 process alignReadFiles {
@@ -194,6 +190,7 @@ process callGerminativeVariants {
         file(sortedDuplicateMarkedRecalibratedBam),
         file(sortedDuplicateMarkedRecalibratedBamIndex) from haplotypeCallerChannel
     path referenceGenomeDirectory from referenceGenomeDirectoryChannel
+    path intervalsFilePath from intervalsFilePathChannel
     path resourceBundleDirectory from resourceBundleDirectoryChannel
 
     output:
@@ -205,7 +202,7 @@ process callGerminativeVariants {
         --input_file ${sortedDuplicateMarkedRecalibratedBam} \
         --out ${sample}.g.vcf \
         --reference_sequence ${referenceGenomeDirectory}/${REFERENCE_GENOME_FASTA} \
-        --intervals 22:${CYP2D6_START}-${CYP2D6_END} \
+        --intervals ${intervalsFilePath} \
         --emitRefConfidence GVCF \
         --dbsnp ${resourceBundleDirectory}/${DBSNP_VCF} \
         --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY
@@ -221,6 +218,7 @@ process genotypeGVCF {
     input:
     file gvcf from gvcfChannel.collect()
     path referenceGenomeDirectory from referenceGenomeDirectoryChannel
+    path intervalsFilePath from intervalsFilePathChannel
     path resourceBundleDirectory from resourceBundleDirectoryChannel
 
     output:
@@ -233,7 +231,7 @@ process genotypeGVCF {
         --variant gvcf.list \
         --out "${batchName}.joint.vcf" \
         --reference_sequence ${referenceGenomeDirectory}/${REFERENCE_GENOME_FASTA} \
-        --intervals 22:${CYP2D6_START}-${CYP2D6_END} \
+        --intervals ${intervalsFilePath} \
         --dbsnp ${resourceBundleDirectory}/${DBSNP_VCF} \
         --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY
     """
@@ -249,6 +247,7 @@ process filterVariants {
     input:
     file vcf from vcfChannel
     path referenceGenomeDirectory from referenceGenomeDirectoryChannel
+    path intervalsFilePath from intervalsFilePathChannel
 
     output:
     file "${batchName}.joint.filtered.vcf" into filteredVcfChannel
@@ -259,7 +258,7 @@ process filterVariants {
     --variant ${vcf} \
     --out "${batchName}.joint.filtered.vcf" \
     --reference_sequence ${referenceGenomeDirectory}/${REFERENCE_GENOME_FASTA} \
-    --intervals 22:${CYP2D6_START}-${CYP2D6_END} \
+    --intervals ${intervalsFilePath} \
     --filterExpression "QUAL <= 50.0" \
     --filterName QUALFilter \
     --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY
@@ -276,6 +275,7 @@ process assessAlignmentCoverage {
     input:
     file resultAlignment from depthOfCoverageChannel.collect()
     path referenceGenomeDirectory from referenceGenomeDirectoryChannel
+    path intervalsFilePath from intervalsFilePathChannel
 
     output:
     file "${batchName}.table" into depthOfCoverageResultChannel
@@ -287,8 +287,7 @@ process assessAlignmentCoverage {
     --input_file bam.list \
     --out ${batchName}.table \
     --reference_sequence ${referenceGenomeDirectory}/${REFERENCE_GENOME_FASTA} \
-    --intervals 7:${EGFR_START}-${EGFR_END} \
-    --intervals 22:${CYP2D6_START}-${CYP2D6_END} \
+    --intervals ${intervalsFilePath} \
     --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY \
     --minMappingQuality 1 \
     --omitIntervalStatistics \
