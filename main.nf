@@ -129,7 +129,7 @@ process markDuplicates {
 }
 
 
-duplicateMarksChannel.into { 
+duplicateMarksChannel.into {
     baseRecalibratorChannel;
     printReadsChannel;
 }
@@ -439,9 +439,9 @@ process gatherStargazerResultsPerSample {
     file "${sample}.haplotypes.tsv"
 
     """
-    python ${params.PIPELINE_FOLDER}/scripts/merge_stargazer_output_per_sample.py \
+    python $baseDir/scripts/merge_stargazer_output_per_sample.py \
         ${sample} \
-        ${params.PIPELINE_FOLDER}/intervals/list.json
+        $baseDir/intervals/list.json
     """
 
 }
