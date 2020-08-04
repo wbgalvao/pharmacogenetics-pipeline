@@ -75,7 +75,7 @@ $ docker build . -t poppler:0.82.0-r1
 
 Após construir e baixar todas as imagens acima, execute o seguinte comando para limpar seu ambiente:
 
-```
+```bash
 $ docker rmi $(docker images --filter dangling=true -q)
 ```
 
@@ -114,13 +114,12 @@ Uma vez preparado o ambiente, podemos rodar o pipeline. Como dito anteriormente,
 * `--samples`: Caminho de diretório contendo arquivos `.fastq.gz` da batch de amostras que será processada;
 * `--reference`: Caminho do diretório onde se encontra o `fasta` do genoma de referência, além dos arquivos de dicionário e índice;
 * `--resources`: Caminho do diretório onde se encontram os arquivos do pacote de recursos criado pela Broad do genoma `b37`;
-* `--list`: Caminho do arquivo `stargazer-target-genes.sorted.list` (contido nesse repositório, dentro do diretório `intervals`);
 * `--results`: Caminho de um diretório alvo para gerar os arquivos resultantes do processamento
 
 Exemplo de comando para execução do pipeline:
 
 ```bash
-nextflow run main.nf --samples /home/watson/wilder/pharmacogenetics-analyses/nextflow/fastqs/NS20191022/ --reference /home/watson/wilder/reference-genomes/GRCh37/ --resources /home/watson/wilder/reference-genomes/b37-resource-bundle/ --list /home/watson/wilder/pharmacogenetics-pipeline/intervals/stargazer-target-genes.sorted.list --results /home/watson/wilder/pharmacogenetics-analyses/nextflow/20190346/
+nextflow run main.nf -with-report --samples /home/watson/wilder/pharmacogenetics-analyses/nextflow/fastqs/NS20191022/ --reference /home/watson/wilder/reference-genomes/GRCh37/ --resources /home/watson/wilder/reference-genomes/b37-resource-bundle/ --results /home/watson/wilder/pharmacogenetics-analyses/nextflow/20190346/
 ```
 
 #### Observações
@@ -134,6 +133,8 @@ nextflow run main.nf --samples /home/watson/wilder/pharmacogenetics-analyses/nex
 * O pipeline tenta fazer a definição de haplótipos para os 54 genes suportados pelo Stargazer (`CACNA1S`, `CFTR`, `CYP1A1`, `CYP1A2`, `CYP1B1`, `CYP2A6`, `CYP2A7`, `CYP2A13`, `CYP2B6`, `CYP2B7`, `CYP2C8`, `CYP2C9`, `CYP2C19`, `CYP2D6`, `CYP2D7`, `CYP2E1`, `CYP2F1`, `CYP2J2`, `CYP2R1`, `CYP2S1`, `CYP2W1`, `CYP3A4`, `CYP3A5`, `CYP3A7`, `CYP3A43`, `CYP4B1`, `CYP26A1`, `CYP4F2`, `CYP19A1`, `DPYD`, `G6PD`, `GSTM1`, `GSTP1`, `GSTT1`, `IFNL3`, `NAT1`, `NAT2`, `NUDT15`, `POR`, `RYR1`, `SLC15A2`, `SLC22A2`, `SLCO1B1`, `SLCO1B3`, `SLCO2B1`, `SULT1A1`, `TBXAS1`, `TPMT`, `UGT1A1`, `UGT1A4`, `UGT2B7`, `UGT2B15`, `UGT2B17` e `VKORC1`). Contudo, caso não haja cobertura em algum desses genes em uma dada amostra a execução do Stargazer encontrará um erro. O pipeline continuará a ser executado, mas no final não haverá informação para esse gene nessa amostra;
 
 * O Nextflow criará um arquivo `.nextflow.log`, e dois diretórios `work` e `.nextflow` dentro do diretório de execução dos pipelines. Esses artefatos podem ser excluídos apenas quando o pipeline terminar o processamento com sucesso;
+
+* Também será criado um arquivo `report.html` no diretório de execução do Nextflow. Esse relatório é importante para análise de métricas de processamento do pipeline, mas não necessariamente deverá ser armazenado;
 
 * Caso haja um erro na execução, podemos consertá-lo e continuar a execução do pipeline de onde a mesma parou executando o mesmo comando inicial e adicionando a opção `-resume`.
 
