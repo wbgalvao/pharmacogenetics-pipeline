@@ -41,62 +41,34 @@ sampleReadsFilesChannel.into {
 
 process alignReadFiles {
 
-    container "bwa:v0.7.17"
+    container "alignment:v0.1.0"
 
     input:
     tuple val(sample), file(fastqs) from samplesFastqsChannel
     path referenceGenomeDirectory from referenceGenomeDirectoryChannel
 
     output:
-    tuple val(sample), file("${sample}.sam") into samChannel
+    tuple val(sample), file("${sample}.sorted.bam") into sortedBamChannel
 
     """
     bwa mem \
+        -K 100000000 \
+        -p \
+        -v 3 \
+        -t 4 \
+        -Y \
         -H \
         -a \
         -d \
         -S \
         -R "@RG\\tID:${fastqs[0]}\\tPL:ILLUMINA\\tSM:${sample}" \
         ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
-        ${fastqs} > ${sample}.sam
+        ${fastqs} \
+        | samtools view -b \
+        | samtools sort > ${sample}.sorted.bam
     """
 
 }
-
-
-process compressAlignmentFiles {
-
-    container "samtools:1.10"
-
-    input:
-    tuple val(sample), file(sam) from samChannel
-
-    output:
-    tuple val(sample), file("${sample}.bam") into bamChannel
-
-    """
-    samtools view -b ${sam} > ${sample}.bam
-    """
-
-}
-
-
-process sortAlignments {
-
-    container "samtools:1.10"
-
-    input:
-    tuple val(sample), file(bam) from bamChannel
-
-    output:
-    tuple val(sample), file("${sample}.sorted.bam") into sortedBamChannel
-
-    """
-    samtools sort ${bam} > ${sample}.sorted.bam
-    """
-
-}
-
 
 process markDuplicates {
 

@@ -31,16 +31,11 @@ Para executar esse pipeline é necessário um ambiente de execução com os segu
 
 #### Preparando as imagens Docker
 
-Para construir a imagem necessária para executar o [`bwa`](https://github.com/lh3/bwa), vá para o diretório `dockerfiles/bwa` e execute o comando:
+
+Para construir a imagem necessária para a etapa de alinhamento (imagem contém ambos `bwa` (v0.7.17) e `samtools` (1.10)), vá para o diretório `dockerfiles/alignment` e execute o comando:
 
 ```bash
-$ docker build . -t bwa:v0.7.17
-```
-
-Para construir a imagem necessária para executar o [`samtools`](https://github.com/samtools/samtools), vá para o diretório `dockerfiles/samtools` e execute o comando:
-
-```bash
-$ docker build . -t samtools:1.10
+$ docker build . -t alignment:v0.1.0
 ```
 
 Para construir a imagem necessária para executar o [`Picard`](https://broadinstitute.github.io/picard/), execute o comando:
