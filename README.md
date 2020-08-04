@@ -32,7 +32,7 @@ Para executar esse pipeline é necessário um ambiente de execução com os segu
 #### Preparando as imagens Docker
 
 
-Para construir a imagem necessária para a etapa de alinhamento (imagem contém ambos `bwa` (v0.7.17) e `samtools` (1.10)), vá para o diretório `dockerfiles/alignment` e execute o comando:
+Para construir a imagem necessária para a etapa de alinhamento (imagem contém ambos [`bwa`](https://github.com/lh3/bwa) (v0.7.17) e [`samtools`](https://github.com/samtools/samtools) (1.10)), vá para o diretório `dockerfiles/alignment` e execute o comando:
 
 ```bash
 $ docker build . -t alignment:v0.1.0
