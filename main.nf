@@ -363,7 +363,7 @@ process callHaplotypes {
         path("${batchName}.${gene}.stargazer-genotype.project") into stargazerResultsChannel
 
     """
-    mkdir /${batchName}/
+    mkdir ${batchName}
     python /usr/Stargazer_v1.0.8/stargazer.py genotype \
     --target_gene ${gene} \
     --control_gene EGFR \
