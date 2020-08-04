@@ -13,7 +13,6 @@
 sampleReadsFilesChannel = Channel.fromFilePairs("${params.samples}/*_R{1,2}*.fastq.gz")
 referenceGenomeDirectoryChannel = Channel.value(params.reference)
 resourceBundleDirectoryChannel = Channel.value(params.resources)
-intervalsFilePathChannel = Channel.value(params.list)
 resultsDirectory = params.results
 
 
@@ -212,7 +211,6 @@ process callGerminativeVariants {
         file(sortedDuplicateMarkedRecalibratedBam),
         file(sortedDuplicateMarkedRecalibratedBamIndex) from haplotypeCallerChannel
     path referenceGenomeDirectory from referenceGenomeDirectoryChannel
-    path intervalsFilePath from intervalsFilePathChannel
     path resourceBundleDirectory from resourceBundleDirectoryChannel
 
     output:
@@ -225,7 +223,7 @@ process callGerminativeVariants {
         --input_file ${sortedDuplicateMarkedRecalibratedBam} \
         --out ${sample}.g.vcf \
         --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
-        --intervals ${intervalsFilePath} \
+        --intervals $baseDir/intervals/stargazer-target-genes.sorted.list \
         --emitRefConfidence GVCF \
         --dbsnp ${resourceBundleDirectory}/${params.DBSNP_VCF} \
         --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY
@@ -241,7 +239,6 @@ process combineGVCFs {
     input:
     file gvcf from gvcfChannel.collect()
     path referenceGenomeDirectory from referenceGenomeDirectoryChannel
-    path intervalsFilePath from intervalsFilePathChannel
     path resourceBundleDirectory from resourceBundleDirectoryChannel
 
     output:
@@ -255,7 +252,7 @@ process combineGVCFs {
         --variant gvcfs.list \
         --out "${batchName}.g.vcf" \
         --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
-        --intervals ${intervalsFilePath} \
+        --intervals $baseDir/intervals/stargazer-target-genes.sorted.list \
         --dbsnp ${resourceBundleDirectory}/${params.DBSNP_VCF} \
         --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY
     """
@@ -270,7 +267,6 @@ process genotypeGVCF {
     input:
     file gvcf from combinedGVCFChannel
     path referenceGenomeDirectory from referenceGenomeDirectoryChannel
-    path intervalsFilePath from intervalsFilePathChannel
     path resourceBundleDirectory from resourceBundleDirectoryChannel
 
     output:
@@ -282,7 +278,7 @@ process genotypeGVCF {
         --variant ${gvcf[0]} \
         --out "${batchName}.vcf" \
         --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
-        --intervals ${intervalsFilePath} \
+        --intervals $baseDir/intervals/stargazer-target-genes.sorted.list \
         --dbsnp ${resourceBundleDirectory}/${params.DBSNP_VCF} \
         --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY
     """
@@ -297,7 +293,6 @@ process filterVariants {
     input:
     file vcf from vcfChannel
     path referenceGenomeDirectory from referenceGenomeDirectoryChannel
-    path intervalsFilePath from intervalsFilePathChannel
 
     output:
     file "${batchName}.filtered.vcf" into filteredVcfChannel
@@ -308,7 +303,7 @@ process filterVariants {
     --variant ${vcf} \
     --out "${batchName}.filtered.vcf" \
     --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
-    --intervals ${intervalsFilePath} \
+    --intervals $baseDir/intervals/stargazer-target-genes.sorted.list \
     --filterExpression "QUAL <= 50.0" \
     --filterName QUALFilter \
     --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY
@@ -330,7 +325,6 @@ process assessAlignmentCoverage {
     input:
     file resultAlignment from depthOfCoverageChannel.collect()
     path referenceGenomeDirectory from referenceGenomeDirectoryChannel
-    path intervalsFilePath from intervalsFilePathChannel
 
     output:
     file "${batchName}.table" into depthOfCoverageResultChannel
@@ -342,7 +336,7 @@ process assessAlignmentCoverage {
     --input_file bam.list \
     --out ${batchName}.table \
     --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
-    --intervals ${intervalsFilePath} \
+    --intervals $baseDir/intervals/stargazer-target-genes.sorted.list \
     --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY \
     --minMappingQuality 1 \
     --omitIntervalStatistics \
