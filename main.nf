@@ -29,7 +29,7 @@ targetGenesChannel = Channel.fromList([
 ])
 
 
-batchName = file(params.samples).getBaseName()
+batchName = file(params.samples, type: "dir").getBaseName()
 pipelineOutputPath = "${resultsDirectory}/${batchName}"
 
 // These channels are used later to organize and publish pipeline artifacts per sample
