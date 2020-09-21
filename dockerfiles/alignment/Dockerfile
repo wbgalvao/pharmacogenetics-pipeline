@@ -1,24 +1,20 @@
-FROM alpine:3.11.3 AS base
+FROM debian:stretch-20200803 AS base
+
 
 # Build base image
 # Essentially install necessary packages in the alpine official image
-RUN apk update && apk add \
-    bash \
-    zlib \
-    zlib-dev \
-    gcc \
-    g++ \
-    make \
-    git \
-    libbz2 \
-    xz \
-    xz-dev \
-    libcurl \
-    autoconf \
-    libbz2 \
-    bzip2-dev \
-    ncurses \
-    ncurses-dev
+RUN apt-get update && apt-get -y install \
+        procps \
+        g++ \
+        make \
+        git \
+        zlib1g-dev \
+        libbz2-dev \
+        liblzma-dev \
+        libcurl3-dev \
+        ncurses-dev \
+        autoconf \
+    && rm -rf /var/lib/apt/lists/*
 
 
 # Build bwa (v0.7.17)
