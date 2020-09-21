@@ -41,7 +41,7 @@ sampleReadsFilesChannel.into {
 
 process alignReadFiles {
 
-    container "alignment:v0.1.0"
+    container "alignment:v0.1.1"
 
     input:
     tuple val(sample), file(fastqs) from samplesFastqsChannel
@@ -53,19 +53,11 @@ process alignReadFiles {
     """
     bwa mem \
         -K 100000000 \
-        -p \
-        -v 3 \
-        -t 4 \
-        -Y \
-        -H \
-        -a \
-        -d \
-        -S \
+        -t 16 \
         -R "@RG\\tID:${fastqs[0]}\\tPL:ILLUMINA\\tSM:${sample}" \
-        ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
+        ${referenceGenomeFasta} \
         ${fastqs} \
-        | samtools view -b \
-        | samtools sort > ${sample}.sorted.bam
+        | samtools sort -@ 16 -o ${sample}.sorted.bam
     """
 
 }
