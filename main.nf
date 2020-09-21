@@ -3,6 +3,7 @@
 
 /* Command line arguments:
     --samples: Path to directory where the target batch fastq files are stored
+    --sdtype: Sequencing data type of taget samples ('ts' for targeted sequencing or 'wgs' for whole genome sequencing)
     --reference: Path to GRCh37 reference genome (with index and .dict files) directory
     --resources: Path to Broad's Institute b37 resource bundle
     --list: Path to .list file with target intervals (stargazer-target-genes.sorted.list)
@@ -11,6 +12,7 @@
 
 
 sampleReadsFilesChannel = Channel.fromFilePairs("${params.samples}/*_R{1,2}*.fastq.gz")
+sequencingDataTypeChannel = Channel.of(params.sdtype)
 referenceGenomeDirectoryChannel = Channel.value(params.reference)
 resourceBundleDirectoryChannel = Channel.value(params.resources)
 resultsDirectory = params.results
@@ -319,6 +321,7 @@ process callHaplotypes {
     input:
     file vcf from stargazerVcfChannel
     file gdf from depthOfCoverageResultChannel
+    val sequencingDataType from sequencingDataTypeChannel
     each gene from targetGenesChannel
 
     output:
@@ -331,7 +334,7 @@ process callHaplotypes {
     python /usr/Stargazer_v1.0.8/stargazer.py genotype \
     --target_gene ${gene} \
     --control_gene EGFR \
-    --data_type ts \
+    --data_type ${sequencingDataType} \
     --gdf ${gdf} \
     --vcf ${vcf} \
     --output_dir . \
