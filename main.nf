@@ -129,7 +129,7 @@ process createRecalibrationData {
         --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY \
         --useOriginalQualities \
         --knownSites ${resourceBundleDirectory}/${params.DBSNP_VCF} \
-        --knownSites ${resourceBundleDirectory}/${params.GOLD_STANDART_INDELS_1000G_VCF} \
+        --knownSites ${resourceBundleDirectory}/${params.GOLD_STANDARD_INDELS_1000G_VCF} \
         --knownSites ${resourceBundleDirectory}/${params.OMNI25_1000G_VCF} \
         --knownSites ${resourceBundleDirectory}/${params.PHASE1_INDELS_1000G_VCF}
     """
