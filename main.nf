@@ -397,9 +397,9 @@ process gatherStargazerResultsPerSample {
     file "${sample}.haplotypes.tsv"
 
     """
-    python $baseDir/scripts/merge_stargazer_output_per_sample.py \
+    python $projectDir/scripts/merge_stargazer_output_per_sample.py \
         ${sample} \
-        $baseDir/intervals/list.json
+        $projectDir/intervals/list.json
     """
 
 }
