@@ -1,12 +1,20 @@
-FROM python:3.6.10-alpine3.10
+FROM python:3.6-stretch
 
 
-# Install bash, R, wget and OpenJDK-JRE
-RUN apk update && apk add \
-    bash \
-    R \
-    wget \
-    openjdk11-jre
+# Prepare environment for Stargazer setup
+# Install git, g++, R, JRE 8, and python scientific stack packages
+RUN apt-get update && apt-get install -y \
+    git \
+    g++ \
+    r-base \
+    r-base-dev \
+    openjdk-8-jre-headless \
+    && pip install --no-cache-dir \
+        numpy \
+        scipy \
+        pandas \
+        scipy \
+    && rm -rf /var/lib/apt/lists/*
 
 
 # Download Stargazer v1.0.8
