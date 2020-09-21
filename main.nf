@@ -19,8 +19,8 @@ resultsDirectory = params.results
 
 
 targetGenesChannel = Channel.fromList([
-    "CACNA1S", "CFTR", "CYP1A1", "CYP1A2", "CYP1B1", "CYP2A6", "CYP2A7", "CYP2A13",
-    "CYP2B6", "CYP2B7", "CYP2C8", "CYP2C9", "CYP2C19", "CYP2D6", "CYP2D7", "CYP2E1",
+    "CACNA1S", "CFTR", "CYP1A1", "CYP1A2", "CYP1B1", "CYP2A6", "CYP2A13",
+    "CYP2B6", "CYP2C8", "CYP2C9", "CYP2C19", "CYP2D6", "CYP2E1",
     "CYP2F1", "CYP2J2", "CYP2R1", "CYP2S1", "CYP2W1", "CYP3A4", "CYP3A5", "CYP3A7",
     "CYP3A43", "CYP4B1", "CYP26A1", "CYP4F2", "CYP19A1", "DPYD", "G6PD", "GSTM1",
     "GSTP1", "GSTT1", "IFNL3", "NAT1", "NAT2", "NUDT15", "POR", "RYR1", "SLC15A2",
