@@ -70,11 +70,18 @@ outputOrganizerScriptChannel = Channel.fromPath(params.script)
 
 process alignReadFiles {
 
-    container "alignment:v0.1.1"
+    container "751848375488.dkr.ecr.us-east-1.amazonaws.com/alignment:v0.1.1"
 
     input:
     tuple val(sample), file(fastqs) from samplesFastqsChannel
-    path referenceGenomeDirectory from referenceGenomeDirectoryChannel
+    file referenceGenomeFasta from referenceGenomeFastaChannel
+    file referenceGenomeDict from referenceGenomeDictChannel
+    file referenceGenomeAmb from referenceGenomeAmbChannel
+    file referenceGenomeAnn from referenceGenomeAnnChannel
+    file referenceGenomeBwt from referenceGenomeBwtChannel
+    file referenceGenomeFai from referenceGenomeFaiChannel
+    file referenceGenomePac from referenceGenomePacChannel
+    file referenceGenomeSa from referenceGenomeSaChannel
 
     output:
     tuple val(sample), file("${sample}.sorted.bam") into sortedBamChannel
@@ -135,8 +142,18 @@ process createRecalibrationData {
     tuple val(sample),
         file(sortedDuplicateMarkedBam),
         file(sortedDuplicateMarkedBamIndex) from baseRecalibratorChannel
-    path referenceGenomeDirectory from referenceGenomeDirectoryChannel
-    path resourceBundleDirectory from resourceBundleDirectoryChannel
+    file referenceGenomeFasta from referenceGenomeFastaChannel
+    file referenceGenomeDict from referenceGenomeDictChannel
+    file referenceGenomeAmb from referenceGenomeAmbChannel
+    file referenceGenomeAnn from referenceGenomeAnnChannel
+    file referenceGenomeBwt from referenceGenomeBwtChannel
+    file referenceGenomeFai from referenceGenomeFaiChannel
+    file referenceGenomePac from referenceGenomePacChannel
+    file referenceGenomeSa from referenceGenomeSaChannel
+    file dbsnpVcf from dbsnpVcfChannel
+    file goldStandardIndels from goldStandardIndelsChannel
+    file omni25Vcf from omni25VcfChannel
+    file phase1IndelsVcf from phase1IndelsVcfChannel
 
     output:
     file "${sample}.recal_data.table" into recalibrationDataChannel
@@ -146,13 +163,13 @@ process createRecalibrationData {
         --analysis_type BaseRecalibrator \
         --input_file ${sortedDuplicateMarkedBam} \
         --out ${sample}.recal_data.table \
-        --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
+        --reference_sequence ${referenceGenomeFasta} \
         --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY \
         --useOriginalQualities \
-        --knownSites ${resourceBundleDirectory}/${params.DBSNP_VCF} \
-        --knownSites ${resourceBundleDirectory}/${params.GOLD_STANDARD_INDELS_1000G_VCF} \
-        --knownSites ${resourceBundleDirectory}/${params.OMNI25_1000G_VCF} \
-        --knownSites ${resourceBundleDirectory}/${params.PHASE1_INDELS_1000G_VCF}
+        --knownSites ${dbsnpVcf} \
+        --knownSites ${goldStandardIndels} \
+        --knownSites ${omni25Vcf} \
+        --knownSites ${phase1IndelsVcf}
     """
 
 }
@@ -168,7 +185,14 @@ process applyRecalibration {
         file(sortedDuplicateMarkedBam),
         file(sortedDuplicateMarkedBamIndex) from printReadsChannel
     file recalibrationDataTable from recalibrationDataChannel
-    path referenceGenomeDirectory from referenceGenomeDirectoryChannel
+    file referenceGenomeFasta from referenceGenomeFastaChannel
+    file referenceGenomeDict from referenceGenomeDictChannel
+    file referenceGenomeAmb from referenceGenomeAmbChannel
+    file referenceGenomeAnn from referenceGenomeAnnChannel
+    file referenceGenomeBwt from referenceGenomeBwtChannel
+    file referenceGenomeFai from referenceGenomeFaiChannel
+    file referenceGenomePac from referenceGenomePacChannel
+    file referenceGenomeSa from referenceGenomeSaChannel
 
     output:
     tuple val(sample),
@@ -180,7 +204,7 @@ process applyRecalibration {
         --analysis_type PrintReads \
         --input_file ${sortedDuplicateMarkedBam} \
         --out ${sample}.sorted.duplicate_marked.recalibrated.bam \
-        --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
+        --reference_sequence ${referenceGenomeFasta} \
         --BQSR ${recalibrationDataTable} \
         --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY \
         --useOriginalQualities
@@ -203,8 +227,16 @@ process callGerminativeVariants {
     tuple val(sample),
         file(sortedDuplicateMarkedRecalibratedBam),
         file(sortedDuplicateMarkedRecalibratedBamIndex) from haplotypeCallerChannel
-    path referenceGenomeDirectory from referenceGenomeDirectoryChannel
-    path resourceBundleDirectory from resourceBundleDirectoryChannel
+    file referenceGenomeFasta from referenceGenomeFastaChannel
+    file referenceGenomeDict from referenceGenomeDictChannel
+    file referenceGenomeAmb from referenceGenomeAmbChannel
+    file referenceGenomeAnn from referenceGenomeAnnChannel
+    file referenceGenomeBwt from referenceGenomeBwtChannel
+    file referenceGenomeFai from referenceGenomeFaiChannel
+    file referenceGenomePac from referenceGenomePacChannel
+    file referenceGenomeSa from referenceGenomeSaChannel
+    file dbsnpVcf from dbsnpVcfChannel
+    file intervalsFile from intervalsFileChannel
 
     output:
     tuple file("${sample}.g.vcf"),
@@ -215,10 +247,10 @@ process callGerminativeVariants {
         --analysis_type HaplotypeCaller \
         --input_file ${sortedDuplicateMarkedRecalibratedBam} \
         --out ${sample}.g.vcf \
-        --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
-        --intervals $baseDir/intervals/stargazer-target-genes.sorted.list \
+        --reference_sequence ${referenceGenomeFasta} \
+        --intervals ${intervalsFile} \
         --emitRefConfidence GVCF \
-        --dbsnp ${resourceBundleDirectory}/${params.DBSNP_VCF} \
+        --dbsnp ${dbsnpVcf} \
         --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY
     """
 
@@ -231,8 +263,16 @@ process combineGVCFs {
 
     input:
     file gvcf from gvcfChannel.collect()
-    path referenceGenomeDirectory from referenceGenomeDirectoryChannel
-    path resourceBundleDirectory from resourceBundleDirectoryChannel
+    file referenceGenomeFasta from referenceGenomeFastaChannel
+    file referenceGenomeDict from referenceGenomeDictChannel
+    file referenceGenomeAmb from referenceGenomeAmbChannel
+    file referenceGenomeAnn from referenceGenomeAnnChannel
+    file referenceGenomeBwt from referenceGenomeBwtChannel
+    file referenceGenomeFai from referenceGenomeFaiChannel
+    file referenceGenomePac from referenceGenomePacChannel
+    file referenceGenomeSa from referenceGenomeSaChannel
+    file dbsnpVcf from dbsnpVcfChannel
+    file intervalsFile from intervalsFileChannel
 
     output:
     tuple file("${batchName}.g.vcf"),
@@ -244,9 +284,9 @@ process combineGVCFs {
         --analysis_type CombineGVCFs \
         --variant gvcfs.list \
         --out "${batchName}.g.vcf" \
-        --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
-        --intervals $baseDir/intervals/stargazer-target-genes.sorted.list \
-        --dbsnp ${resourceBundleDirectory}/${params.DBSNP_VCF} \
+        --reference_sequence ${referenceGenomeFasta} \
+        --intervals ${intervalsFile} \
+        --dbsnp ${dbsnpVcf} \
         --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY
     """
 
@@ -259,8 +299,16 @@ process genotypeGVCF {
 
     input:
     file gvcf from combinedGVCFChannel
-    path referenceGenomeDirectory from referenceGenomeDirectoryChannel
-    path resourceBundleDirectory from resourceBundleDirectoryChannel
+    file referenceGenomeFasta from referenceGenomeFastaChannel
+    file referenceGenomeDict from referenceGenomeDictChannel
+    file referenceGenomeAmb from referenceGenomeAmbChannel
+    file referenceGenomeAnn from referenceGenomeAnnChannel
+    file referenceGenomeBwt from referenceGenomeBwtChannel
+    file referenceGenomeFai from referenceGenomeFaiChannel
+    file referenceGenomePac from referenceGenomePacChannel
+    file referenceGenomeSa from referenceGenomeSaChannel
+    file dbsnpVcf from dbsnpVcfChannel
+    file intervalsFile from intervalsFileChannel
 
     output:
     file "${batchName}.vcf" into vcfChannel
@@ -270,9 +318,9 @@ process genotypeGVCF {
         --analysis_type GenotypeGVCFs \
         --variant ${gvcf[0]} \
         --out "${batchName}.vcf" \
-        --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
-        --intervals $baseDir/intervals/stargazer-target-genes.sorted.list \
-        --dbsnp ${resourceBundleDirectory}/${params.DBSNP_VCF} \
+        --reference_sequence ${referenceGenomeFasta} \
+        --intervals ${intervalsFile} \
+        --dbsnp ${dbsnpVcf} \
         --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY
     """
 
@@ -285,7 +333,15 @@ process filterVariants {
 
     input:
     file vcf from vcfChannel
-    path referenceGenomeDirectory from referenceGenomeDirectoryChannel
+    file referenceGenomeFasta from referenceGenomeFastaChannel
+    file referenceGenomeDict from referenceGenomeDictChannel
+    file referenceGenomeAmb from referenceGenomeAmbChannel
+    file referenceGenomeAnn from referenceGenomeAnnChannel
+    file referenceGenomeBwt from referenceGenomeBwtChannel
+    file referenceGenomeFai from referenceGenomeFaiChannel
+    file referenceGenomePac from referenceGenomePacChannel
+    file referenceGenomeSa from referenceGenomeSaChannel
+    file intervalsFile from intervalsFileChannel
 
     output:
     file "${batchName}.filtered.vcf" into filteredVcfChannel
@@ -295,8 +351,8 @@ process filterVariants {
     --analysis_type VariantFiltration \
     --variant ${vcf} \
     --out "${batchName}.filtered.vcf" \
-    --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
-    --intervals $baseDir/intervals/stargazer-target-genes.sorted.list \
+    --reference_sequence ${referenceGenomeFasta} \
+    --intervals ${intervalsFile} \
     --filterExpression "QUAL <= 50.0" \
     --filterName QUALFilter \
     --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY
@@ -317,7 +373,15 @@ process assessAlignmentCoverage {
 
     input:
     file resultAlignment from depthOfCoverageChannel.collect()
-    path referenceGenomeDirectory from referenceGenomeDirectoryChannel
+    file referenceGenomeFasta from referenceGenomeFastaChannel
+    file referenceGenomeDict from referenceGenomeDictChannel
+    file referenceGenomeAmb from referenceGenomeAmbChannel
+    file referenceGenomeAnn from referenceGenomeAnnChannel
+    file referenceGenomeBwt from referenceGenomeBwtChannel
+    file referenceGenomeFai from referenceGenomeFaiChannel
+    file referenceGenomePac from referenceGenomePacChannel
+    file referenceGenomeSa from referenceGenomeSaChannel
+    file intervalsFile from intervalsFileChannel
 
     output:
     file "${batchName}.table" into depthOfCoverageResultChannel
@@ -328,8 +392,8 @@ process assessAlignmentCoverage {
     --analysis_type DepthOfCoverage \
     --input_file bam.list \
     --out ${batchName}.table \
-    --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
-    --intervals $baseDir/intervals/stargazer-target-genes.sorted.list \
+    --reference_sequence ${referenceGenomeFasta} \
+    --intervals ${intervalsFile} \
     --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY \
     --minMappingQuality 1 \
     --omitIntervalStatistics \
@@ -342,7 +406,7 @@ process assessAlignmentCoverage {
 
 process callHaplotypes {
 
-    container "stargazer:v1.0.8"
+    container "751848375488.dkr.ecr.us-east-1.amazonaws.com/stargazer:debian-v1.0.8-new-beagle"
     errorStrategy "ignore" // ¯\_(ツ)_/¯
 
     input:
@@ -365,7 +429,7 @@ process callHaplotypes {
     --gdf ${gdf} \
     --vcf ${vcf} \
     --output_dir . \
-    --output_prefix ${batchName}.${gene} \
+    --output_prefix ${batchName}.${gene}
     """
 
 }
@@ -396,7 +460,14 @@ process splitVCFPerSample {
     input:
     tuple val(sample), file(_) from samplesVcfChannel
     file vcf from selectVariantsVcfChannel
-    path referenceGenomeDirectory from referenceGenomeDirectoryChannel
+    file referenceGenomeFasta from referenceGenomeFastaChannel
+    file referenceGenomeDict from referenceGenomeDictChannel
+    file referenceGenomeAmb from referenceGenomeAmbChannel
+    file referenceGenomeAnn from referenceGenomeAnnChannel
+    file referenceGenomeBwt from referenceGenomeBwtChannel
+    file referenceGenomeFai from referenceGenomeFaiChannel
+    file referenceGenomePac from referenceGenomePacChannel
+    file referenceGenomeSa from referenceGenomeSaChannel
 
     output:
     tuple val(sample), file("${sample}.filtered.vcf"), file("${sample}.filtered.vcf.idx")
@@ -406,7 +477,7 @@ process splitVCFPerSample {
     --analysis_type SelectVariants \
     --variant ${vcf} \
     --out ${sample}.filtered.vcf \
-    --reference_sequence ${referenceGenomeDirectory}/${params.REFERENCE_GENOME_FASTA} \
+    --reference_sequence ${referenceGenomeFasta} \
     --sample_name ${sample} \
     --unsafe ALLOW_SEQ_DICT_INCOMPATIBILITY
     """
@@ -416,20 +487,20 @@ process splitVCFPerSample {
 
 process gatherStargazerResultsPerSample {
 
-    container "pandas:1.0.5"
+    container "751848375488.dkr.ecr.us-east-1.amazonaws.com/pandas:1.0.5"
     publishDir "${pipelineOutputPath}/${sample}", mode: "copy"
 
     input:
     tuple val(sample), file(_) from samplesHaplotypesChannel
     file stargazerResults from stargazerHaplotypesChannel.collect()
+    file outputOrganizerScript from outputOrganizerScriptChannel
+    file intervalsJsonFile from intervalsJsonFileChannel
 
     output:
     file "${sample}.haplotypes.tsv"
 
     """
-    python $projectDir/scripts/merge_stargazer_output_per_sample.py \
-        ${sample} \
-        $projectDir/intervals/list.json
+    python ${outputOrganizerScript} ${sample} ${intervalsJsonFile}
     """
 
 }
@@ -437,7 +508,7 @@ process gatherStargazerResultsPerSample {
 
 process createSampleCNVReport {
 
-    container "poppler:0.82.0-r1"
+    container "751848375488.dkr.ecr.us-east-1.amazonaws.com/poppler:v0.85.0-2"
     publishDir "${pipelineOutputPath}/${sample}", mode: "copy"
 
     input:
