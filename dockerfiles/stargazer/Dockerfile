@@ -19,7 +19,6 @@ RUN apt-get update && apt-get install -y \
 
 # Download Stargazer v1.0.8
 WORKDIR /usr/
-RUN wget https://www.dropbox.com/s/56qpfqfuh2wjzua/Stargazer_v1.0.8.zip?dl=0 -O Stargazer_v1.0.8.zip\
-    && unzip Stargazer_v1.0.8.zip \
-    && rm -r __MACOSX Stargazer_v1.0.8.zip
+RUN wget https://www.dropbox.com/s/08eue4r1bmvebq1/Stargazer_v1.0.8.zip?dl=0 -O Stargazer_v1.0.8.zip\
+    && unzip Stargazer_v1.0.8.zip
 
