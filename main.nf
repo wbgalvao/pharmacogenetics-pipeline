@@ -41,6 +41,33 @@ sampleReadsFilesChannel.into {
 }
 
 
+// Reference genome fasta and index files channels
+referenceGenomeFastaChannel = Channel.value(file("${params.reference}/${params.REFERENCE_GENOME_FASTA}"))
+referenceGenomeDictChannel = Channel.value(file("${params.reference}/${params.REFERENCE_GENOME_DICT}"))
+referenceGenomeAmbChannel = Channel.value(file("${params.reference}/${params.REFERENCE_GENOME_AMB}"))
+referenceGenomeAnnChannel = Channel.value(file("${params.reference}/${params.REFERENCE_GENOME_ANN}"))
+referenceGenomeBwtChannel = Channel.value(file("${params.reference}/${params.REFERENCE_GENOME_BWT}"))
+referenceGenomeFaiChannel = Channel.value(file("${params.reference}/${params.REFERENCE_GENOME_FAI}"))
+referenceGenomePacChannel = Channel.value(file("${params.reference}/${params.REFERENCE_GENOME_PAC}"))
+referenceGenomeSaChannel = Channel.value(file("${params.reference}/${params.REFERENCE_GENOME_SA}"))
+
+
+// Resource bundle vcf files channels
+dbsnpVcfChannel = Channel.value(file("${params.resources}/${params.DBSNP_VCF}"))
+goldStandardIndelsChannel = Channel.value(file("${params.resources}/${params.GOLD_STANDARD_INDELS_1000G_VCF}"))
+omni25VcfChannel = Channel.value(file("${params.resources}/${params.OMNI25_1000G_VCF}"))
+phase1IndelsVcfChannel = Channel.value(file("${params.resources}/${params.PHASE1_INDELS_1000G_VCF}"))
+
+
+// Intervals files channels
+intervalsFileChannel = Channel.value(file(params.intervals))
+intervalsJsonFileChannel = Channel.fromPath(params.intervalsJson)
+
+
+// Output organizer script channel
+outputOrganizerScriptChannel = Channel.fromPath(params.script)
+
+
 process alignReadFiles {
 
     container "alignment:v0.1.1"
