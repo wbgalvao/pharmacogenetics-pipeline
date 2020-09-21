@@ -1,3 +1,6 @@
-FROM alpine:3.11.3
+FROM debian:stretch-20200803
 
-RUN apk update && apk add bash poppler-utils=0.82.0-r1
+RUN apt-get update && apt-get install -y \
+        procps \
+        poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
