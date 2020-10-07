@@ -62,6 +62,7 @@ phase1IndelsVcfChannel = Channel.value(file("${params.resources}/${params.PHASE1
 // Intervals files channels
 intervalsFileChannel = Channel.value(file(params.intervals))
 intervalsJsonFileChannel = Channel.fromPath(params.intervalsJson)
+snpsAndIndelsHaplotypesBedChannel = Channel.fromPath(params.snpsIndelsHapsBed)
 
 
 // Output organizer script channel
@@ -89,11 +90,11 @@ process alignReadFiles {
     """
     bwa mem \
         -K 100000000 \
-        -t 16 \
+        -t 4 \
         -R "@RG\\tID:${fastqs[0]}\\tPL:ILLUMINA\\tSM:${sample}" \
         ${referenceGenomeFasta} \
         ${fastqs} \
-        | samtools sort -@ 16 -o ${sample}.sorted.bam
+    | samtools sort -@ 4 -o ${sample}.sorted.bam
     """
 
 }
@@ -216,6 +217,38 @@ process applyRecalibration {
 recalibrationChannel.into {
     haplotypeCallerChannel;
     depthOfCoverageChannel;
+    mosdepthAnalysisChannel;
+}
+
+
+// This analysis does not include haplotypes resultant from CNVs and SVs
+process calculateHaplotypesDepth {
+
+    container "quay.io/biocontainers/mosdepth:0.2.4--he527e40_0"
+    publishDir "${pipelineOutputPath}/${sample}", mode: "copy", pattern: "*.regions.bed.gz"
+
+    input:
+    tuple val(sample),
+        file("${sample}.sorted.duplicate_marked.recalibrated.bam"),
+        file("${sample}.sorted.duplicate_marked.recalibrated.bai") from mosdepthAnalysisChannel
+    file snpsIndelsHapsBed from snpsAndIndelsHaplotypesBedChannel
+
+    output:
+    tuple val(sample),
+        file("${sample}.mosdepth.global.dist.txt"),
+        file("${sample}.mosdepth.region.dist.txt"),
+        file("${sample}.regions.bed.gz"),
+        file("${sample}.regions.bed.gz.csi") into mosdepthOutputChannel
+
+    """
+    mosdepth \
+        --by ${snpsIndelsHapsBed} \
+        --fast-mode \
+        --no-per-base \
+        ${sample} \
+        ${sample}.sorted.duplicate_marked.recalibrated.bam
+    """
+
 }
 
 
@@ -485,7 +518,7 @@ process splitVCFPerSample {
 }
 
 
-process gatherStargazerResultsPerSample {
+process gatherStargazerResultsPerSample4 {
 
     container "751848375488.dkr.ecr.us-east-1.amazonaws.com/pandas:1.0.5"
     publishDir "${pipelineOutputPath}/${sample}", mode: "copy"
