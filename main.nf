@@ -3,6 +3,7 @@
 
 /* Command line arguments:
     --samples: Path to directory where the target batch fastq files are stored
+    --threads: Number of threads for alignment process (bwa mem and samtools)
     --sdtype: Sequencing data type of taget samples ('ts' for targeted sequencing or 'wgs' for whole genome sequencing)
     --reference: Path to GRCh37 reference genome (with index and .dict files) directory
     --resources: Path to Broad's Institute b37 resource bundle
@@ -12,6 +13,7 @@
 
 
 sampleReadsFilesChannel = Channel.fromFilePairs("${params.samples}/*_R{1,2}*.fastq.gz")
+numberOfThreadsChannel = Channel.value(params.threads)
 sequencingDataTypeChannel = Channel.of(params.sdtype)
 referenceGenomeDirectoryChannel = Channel.value(params.reference)
 resourceBundleDirectoryChannel = Channel.value(params.resources)
@@ -75,6 +77,7 @@ process alignReadFiles {
 
     input:
     tuple val(sample), file(fastqs) from samplesFastqsChannel
+    val numberOfThreads from numberOfThreadsChannel
     file referenceGenomeFasta from referenceGenomeFastaChannel
     file referenceGenomeDict from referenceGenomeDictChannel
     file referenceGenomeAmb from referenceGenomeAmbChannel
@@ -90,11 +93,11 @@ process alignReadFiles {
     """
     bwa mem \
         -K 100000000 \
-        -t 4 \
+        -t ${numberOfThreads} \
         -R "@RG\\tID:${fastqs[0]}\\tPL:ILLUMINA\\tSM:${sample}" \
         ${referenceGenomeFasta} \
         ${fastqs} \
-    | samtools sort -@ 4 -o ${sample}.sorted.bam
+    | samtools sort -@ ${numberOfThreads} -o ${sample}.sorted.bam
     """
 
 }
@@ -225,7 +228,7 @@ recalibrationChannel.into {
 process calculateHaplotypesDepth {
 
     container "quay.io/biocontainers/mosdepth:0.2.4--he527e40_0"
-    publishDir "${pipelineOutputPath}/${sample}", mode: "copy", pattern: "*.regions.bed.gz"
+    publishDir "${pipelineOutputPath}/${sample}", mode: "copy", pattern: "*.regions.bed.gz", saveAs: { "${file(it).getSimpleName()}.haplotypes-depth.bed.gz" }
 
     input:
     tuple val(sample),
