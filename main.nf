@@ -64,7 +64,7 @@ phase1IndelsVcfChannel = Channel.value(file("${params.resources}/${params.PHASE1
 // Intervals files channels
 intervalsFileChannel = Channel.value(file(params.intervals))
 intervalsJsonFileChannel = Channel.fromPath(params.intervalsJson)
-snpsAndIndelsHaplotypesBedChannel = Channel.fromPath(params.snpsIndelsHapsBed)
+snpsAndIndelsHaplotypesBedChannel = Channel.value(file("${params.snpsIndelsHapsBed}"))
 
 
 // Output organizer script channel
@@ -92,7 +92,7 @@ process alignReadFiles {
 
     """
     bwa mem \
-        -K 100000000 \
+        -K 10000000 \
         -t ${numberOfThreads} \
         -R "@RG\\tID:${fastqs[0]}\\tPL:ILLUMINA\\tSM:${sample}" \
         ${referenceGenomeFasta} \
@@ -228,7 +228,7 @@ recalibrationChannel.into {
 process calculateHaplotypesDepth {
 
     container "quay.io/biocontainers/mosdepth:0.2.4--he527e40_0"
-    publishDir "${pipelineOutputPath}/${sample}", mode: "copy", pattern: "*.regions.bed.gz", saveAs: { "${file(it).getSimpleName()}.haplotypes-depth.bed.gz" }
+    publishDir "${pipelineOutputPath}/${sample}", mode: "copy", pattern: "*.regions.bed.gz"
 
     input:
     tuple val(sample),
@@ -521,7 +521,7 @@ process splitVCFPerSample {
 }
 
 
-process gatherStargazerResultsPerSample4 {
+process gatherStargazerResultsPerSample {
 
     container "751848375488.dkr.ecr.us-east-1.amazonaws.com/pandas:1.0.5"
     publishDir "${pipelineOutputPath}/${sample}", mode: "copy"
