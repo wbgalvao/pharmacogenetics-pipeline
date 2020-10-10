@@ -21,21 +21,25 @@ Todo o processamento é orquestrado pelo [**Nextflow**](https://www.nextflow.io/
 
 ### Requisitos para execução
 
-Para executar esse pipeline é necessário um ambiente de execução com os seguintes requisitos:
+A partir da versão 2.0 esse pipeline se disponibiliza para ser executado em dois ambientes: *cloud* (usando o [Amazon Web Services](https://aws.amazon.com/)) e *on-premise*.
+
+Para executar esse pipeline em um ambiente de execução local são necessários os seguintes requisitos:
 
 * Nextflow instalado (versão recomendada `20.04.1.5335`) ([guia de instalação](https://www.nextflow.io/index.html#GetStarted));
 * Docker instalado ([guia de instalação](https://www.docker.com/get-started));
-* Imagens Docker disponíveis na máquina;
 * Diretório contendo o genoma de referência GRCh37, além de seus respectivos arquivos de índice e dicionário;
+    * Esse diretório deve estar especificado no arquivo de configuração do pipeline (`nextflow.config`), no escopo `watson` e parametro `reference`
 * Diretório com o pacote de recursos do genoma `b37` da Broad Institute.
+    * Esse diretório deve estar especificado no arquivo de configuração do pipeline (`nextflow.config`), no escopo `watson` e parametro `resources`
+
+Para executar esse pipeline na AWS deve-se preparar o ambiente de acordo com [a documentação oficial do Nextflow](https://www.nextflow.io/docs/latest/awscloud.html). Além desse ambiente é necessário disponibilizar as imagens Docker presentes no diretório `dockerfiles` em algum repositório remoto. Elas já se encontram disponíveis no [Elastic Container Registry](https://console.aws.amazon.com/ecr/repositories?region=us-east-1) da Genomika, em caso de mudanças seguir os passos abaixo e, se necessário, trocar nos processos do pipeline para a imagem atualizada.
 
 #### Preparando as imagens Docker
 
-
-Para construir a imagem necessária para a etapa de alinhamento (imagem contém ambos [`bwa`](https://github.com/lh3/bwa) (v0.7.17) e [`samtools`](https://github.com/samtools/samtools) (1.10)), vá para o diretório `dockerfiles/alignment` e execute o comando:
+Para construir a imagem necessária para executar o processo de alinhamento (usando o [`bwa`](https://github.com/lh3/bwa) e [`samtools`](https://github.com/samtools/samtools)), vá para o diretório `dockerfiles/alignment` execute o comando:
 
 ```bash
-$ docker build . -t alignment:v0.1.0
+$ docker build . -t alignment:v0.1.1
 ```
 
 Para construir a imagem necessária para executar o [`Picard`](https://broadinstitute.github.io/picard/), execute o comando:
@@ -48,6 +52,12 @@ Para construir a imagem necessária para executar o [GATK 3](https://github.com/
 
 ```bash
 $ docker pull broadinstitute/gatk3:3.8-0
+```
+
+Para construir a imagem necessária para executar o [`mosdepth`](https://github.com/brentp/mosdepth), execute o comando:
+
+```bash
+$ docker pull quay.io/biocontainers/mosdepth:0.2.4--he527e40_0
 ```
 
 Para construir a imagem necessária para executar o Stargazer, vá para o diretório `dockerfiles/stargazer` execute o comando:
@@ -73,6 +83,10 @@ Após construir e baixar todas as imagens acima, execute o seguinte comando para
 ```bash
 $ docker rmi $(docker images --filter dangling=true -q)
 ```
+
+Esses passos deixarão a imagem local, mas é necessário que essas imagens também estejam disponíveis no ECR da Genomika para que não seja mitigada a possibilidade de execução do pipeline no AWS. Com as imagens locais, veja [documentação oficial do ECR](https://docs.aws.amazon.com/AmazonECR/latest/userguide/docker-push-ecr-image.html) como fazer o *`push`* dessas imagens para a nuvem.
+
+O passo acima só é necessário para as imagens que foram construidas localmente e não estão disponíveis em repositório remoto.
 
 #### Preparando o genoma de referência
 
@@ -107,17 +121,30 @@ Note que os arquivos precisam estar descompactados.
 Uma vez preparado o ambiente, podemos rodar o pipeline. Como dito anteriormente, toda a execução é orquestrada pelo Nextflow, e as instruções de processamento estão presentes no arquivo `main.nf`. Esse arquivo recebe os seguintes argumentos de linha de comando:
 
 * `--samples`: Caminho de diretório contendo arquivos `.fastq.gz` da batch de amostras que será processada;
+* `--threads`: Número de threads usadas no processo de alinhamento (recomendação - local: 4, AWS: 8);
+* `--sdtype`: Tipo de sequenciamento usado nas amostras ('ts' para paineis e exoma 'wgs' para genomas);
 * `--reference`: Caminho do diretório onde se encontra o `fasta` do genoma de referência, além dos arquivos de dicionário e índice;
 * `--resources`: Caminho do diretório onde se encontram os arquivos do pacote de recursos criado pela Broad do genoma `b37`;
 * `--results`: Caminho de um diretório alvo para gerar os arquivos resultantes do processamento
 
-Exemplo de comando para execução do pipeline:
+Exemplo de comando para execução do pipeline para execução local:
 
 ```bash
-nextflow run main.nf -with-report --samples /home/watson/wilder/pharmacogenetics-analyses/nextflow/fastqs/NS20191022/ --reference /home/watson/wilder/reference-genomes/GRCh37/ --resources /home/watson/wilder/reference-genomes/b37-resource-bundle/ --results /home/watson/wilder/pharmacogenetics-analyses/nextflow/20190346/
+nextflow run main.nf -profile watson --samples /home/watson/wilder/pharmacogenetics-analyses/nextflow/fastqs/NS20191022/ --sdtype ts --threads 4 -with-report
+```
+
+Exemplo de comando para execução do pipeline para execução no AWS:
+
+```bash
+nextflow run main.nf -profile cloud --samples s3://genomika-samples-data/NS20191022/ -bucket-dir s3://genomika-pharmacogenetics-pipeline/work/ -with-report
 ```
 
 #### Observações
+
+* Para executar o pipeline no AWS é necessário anteriormente fazer o upload dos fastqs das amostras para um diretório no bucket do S3 criado especificamente para esse propósito (`genomika-samples-data`);
+
+* Além disso, para executar o pipeline no AWS também temos que especificar o parâmetro adicional `-bucket-dir` que será usado pelo Nextflow e pode ser usado de acordo com o exemplo;
+
 * Para cada amostra processada, o pipeline produzirá um diretório (dentro do diretório especificado no parâmetro `--results`), e nesse diretório publicará os seguintes artefatos:
 
     * Um arquivo de alinhamento com seu respectivo índice (`<amostra>.sorted.duplicate_marked.recalibrated.bam` e `<amostra>.sorted.duplicate_marked.recalibrated.bai`);
