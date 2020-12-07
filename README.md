@@ -136,12 +136,18 @@ nextflow run main.nf -profile watson --samples /home/watson/wilder/pharmacogenet
 Exemplo de comando para execução do pipeline para execução no AWS:
 
 ```bash
-nextflow run main.nf -profile cloud --samples s3://genomika-samples-data/NS20191022/ -bucket-dir s3://genomika-pharmacogenetics-pipeline/work/ -with-report
+nextflow run main.nf -profile amazon --samples s3://genomika-samples-data/NS20191022/ -bucket-dir s3://genomika-pharmacogenetics-pipeline/work/ -with-report --threads 4 --sdtype ts
 ```
 
 #### Observações
 
 * Para executar o pipeline no AWS é necessário anteriormente fazer o upload dos fastqs das amostras para um diretório no bucket do S3 criado especificamente para esse propósito (`genomika-samples-data`);
+
+```
+aws s3 cp --recursive /home/watson/wilder/NS20191022 s3://genomika-samples-data/NS20191022
+```
+
+> As amostras ficam no `s3` do console, na pasta `genomika-samples-data`, a senha e login estão no email "Usuário do AWS".
 
 * Além disso, para executar o pipeline no AWS também temos que especificar o parâmetro adicional `-bucket-dir` que será usado pelo Nextflow e pode ser usado de acordo com o exemplo;
 
